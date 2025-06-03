@@ -1,4 +1,10 @@
+from collections import defaultdict
+from datetime import datetime
+
 from fasthtml.common import *
+import json
+
+import service.apiclient
 
 FULL_NAME = "Mershab Issadien"
 
@@ -12,7 +18,7 @@ custom_styles = Style("""
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
                      Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
         background-color: #f9fafb;
-        color: #1f2937;  /* Darker text color */
+        color: #1f2937;
     }
     .container {
         max-width: 700px;
@@ -25,8 +31,8 @@ custom_styles = Style("""
         margin-bottom: 2rem;
     }
     h1 {
-        font-weight: 700;  /* Bold heading */
-        color: #111827;    /* Even darker heading */
+        font-weight: 700;
+        color: #111827;
     }
     h2 {
         font-weight: 600;
@@ -35,14 +41,14 @@ custom_styles = Style("""
     p {
         font-weight: 500;
         line-height: 1.6;
-        color: #374151;  /* Dark gray for paragraphs */
+        color: #374151;
     }
     .about {
         margin-bottom: 2rem;
     }
     .footer {
         font-size: 0.9rem;
-        color: #4b5563;  /* Medium gray footer */
+        color: #4b5563;
     }
 """)
 
@@ -56,10 +62,10 @@ def index():
         Div(
             HeroSection(
                 f"Hi, I'm {FULL_NAME}",
-                "Backend engineer specializing in Java, Go & Python, with a passion for Kubernetes, DevOps, and cloud infrastructure.",
-                # Button("View Projects", hx_get="/projects", cls="primary")  # To be implemented
+                "Backend engineer specializing in Java, Go & Python, with a passion for Kubernetes, DevOps, and cloud infrastructure."
             ),
             AboutSection(),
+            CommitHeatmap(service.apiclient.GetHeatmapData(service.apiclient.GetCommits())),
             FooterSection(),
             cls="container"
         )
@@ -84,6 +90,53 @@ def AboutSection():
             "secure and resilient applications."
         ),
         cls="about"
+    )
+
+
+def CommitHeatmap(heatmap_data):
+    return Div(
+        H2("Commit Activity (Last 30 Days)"),
+        Div(id="cal-heatmap"),
+        Script(src="https://d3js.org/d3.v7.min.js"),
+        Script(src="https://unpkg.com/cal-heatmap/dist/cal-heatmap.min.js"),
+        Link(rel="stylesheet", href="https://unpkg.com/cal-heatmap/dist/cal-heatmap.css"),
+        Script(f"""
+        document.addEventListener("DOMContentLoaded", function () {{
+            const data = {json.dumps(heatmap_data)};
+            const cal = new CalHeatmap();
+
+            cal.paint({{
+                itemSelector: "#cal-heatmap",
+                range: 6,
+                
+                domain: {{ type: 'month', gutter: 15 }},
+                subDomain: {{ type: 'day'}}, 
+                
+                date: {{
+                    start: new Date(new Date().setDate(new Date().getDate() - 180)),
+                }},
+                data: {{
+                    source: data,
+                    x: 'date',
+                    y: 'value'
+                }},
+                scale: {{
+                  color: {{
+                    type: 'threshold',
+                    range: ['#14432a', '#166b34', '#37a446', '#4dd05a'],
+                    domain: [10, 20, 30],
+                  }},
+                }},
+                domain: {{
+                  type: 'month',
+                  gutter: 4,
+                  label: {{ text: 'MMM', textAlign: 'start', position: 'top' }},
+                }},
+            }},
+            );
+        }});
+        """)
+
     )
 
 

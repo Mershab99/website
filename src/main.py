@@ -8,52 +8,10 @@ import service.apiclient
 
 FULL_NAME = "Mershab Issadien"
 
-custom_styles = Style("""
-    body {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 100vh;
-        margin: 0;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
-                     Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-        background-color: #f9fafb;
-        color: #1f2937;
-    }
-    .container {
-        max-width: 700px;
-        width: 100%;
-        padding: 2rem;
-        box-sizing: border-box;
-        text-align: center;
-    }
-    .hero {
-        margin-bottom: 2rem;
-    }
-    h1 {
-        font-weight: 700;
-        color: #111827;
-    }
-    h2 {
-        font-weight: 600;
-        color: #111827;
-    }
-    p {
-        font-weight: 500;
-        line-height: 1.6;
-        color: #374151;
-    }
-    .about {
-        margin-bottom: 2rem;
-    }
-    .footer {
-        font-size: 0.9rem;
-        color: #4b5563;
-    }
-""")
-
-app, rt = fast_app(hdrs=[custom_styles])
-
+app, rt = fast_app(hdrs=[
+    Script(src="https://cdn.tailwindcss.com"),
+    Link(rel="stylesheet", href="https://cdn.jsdelivr.net/npm/daisyui@4.11.1/dist/full.min.css"),
+])
 
 @rt('/status')
 def status():
@@ -61,76 +19,85 @@ def status():
 
 @rt
 def index():
-    return Titled(
-        FULL_NAME,
-        Div(
-            HeroSection(
-                f"Hi, I'm {FULL_NAME}",
-                "Backend engineer specializing in Java, Go & Python, with a passion for Kubernetes, DevOps, and cloud infrastructure."
+    return (
+        Title(FULL_NAME),  # page title in browser tab
+        Main(
+            Div(
+                HeroSection(
+                    f"Hi, I'm {FULL_NAME}",
+                    "Backend engineer specializing in Java, Go & Python, with a passion for Kubernetes, DevOps, and cloud infrastructure. \n"
+                ),
+                AboutSection(),
+                CommitHeatmap(service.apiclient.GetHeatmapData(service.apiclient.GetCommits())),
+                FooterSection(),
+                cls="max-w-xl"  # optional max width for content
             ),
-            AboutSection(),
-            CommitHeatmap(service.apiclient.GetHeatmapData(service.apiclient.GetCommits())),
-            FooterSection(),
-            cls="container"
+            cls="flex flex-col justify-center items-center min-h-screen text-center px-4"
         )
     )
 
 
-def HeroSection(title, subtitle, cta=None):
-    elements = [H1(title), P(subtitle)]
-    if cta:
-        elements.append(cta)
-    return Div(*elements, cls="hero")
-
+def HeroSection(title, subtitle):
+    return Div(
+        H1(title, cls="text-4xl font-bold text-base-content"),
+        P(subtitle, cls="mt-4 text-lg text-base-content"),
+        cls="text-center"
+    )
 
 def AboutSection():
     return Section(
-        H2("About Me"),
+        H2("About Me", cls="text-2xl font-semibold text-base-content mb-2"),
         P(
             "I architect and build scalable backend systems using Java and Go, "
             "focusing on cloud-native infrastructure, Kubernetes orchestration, "
             "and DevOps automation. I’m passionate about designing robust, "
             "efficient pipelines and infrastructure that empower teams to deploy "
-            "secure and resilient applications."
+            "secure and resilient applications.",
+            cls="text-base-content text-md leading-relaxed"
         ),
-        cls="about"
+        cls="bg-base-200 p-6 rounded-lg shadow"
     )
-
 
 def CommitHeatmap(heatmap_data):
     return Div(
-        H2("Commit Activity (Last 6 Months)"),
+        H2("Commit Activity", cls="text-xl font-semibold text-base-content mb-4"),
         Div(
-            Div(id="ex-ghDay", cls="margin-bottom--md"),
-            A("← Previous", href="#", cls="button button--sm button--secondary margin-top--sm", **{
-                "onclick": "event.preventDefault(); cal.previous();"
-            }),
-            A("Next →", href="#", cls="button button--sm button--secondary margin-top--sm margin-left--xs", **{
-                "onclick": "event.preventDefault(); cal.next();"
-            }),
+            Div(id="ex-ghDay", cls="mb-4 "),
+
             Div(
-                Span("Less", style="color: #768390;"),
-                Div(id="ex-ghDay-legend", style="display: inline-block; margin: 0 4px;"),
-                Span("More", style="color: #768390; font-size: 12px;"),
-                style="float: right; font-size: 12px;",
+                A("← Previous", href="#", cls="btn btn-sm btn-outline", **{
+                    "onclick": "event.preventDefault(); cal.previous();"
+                }),
+                A("Next →", href="#", cls="btn btn-sm btn-outline ml-2", **{
+                    "onclick": "event.preventDefault(); cal.next();"
+                }),
+                cls="mb-4"
             ),
-            style={
-                "background": "#22272d",
-                "color": "#adbac7",
-                "borderRadius": "3px",
-                "padding": "1rem",
-                "overflow": "hidden"
-            }
+
+            Div(
+                Span("Less", cls="text-sm text-gray-400"),
+                Div(id="ex-ghDay-legend", cls="inline-block mx-2"),
+                Span("More", cls="text-sm text-gray-400"),
+                cls="text-right text-sm"
+            ),
+
+            cls="bg-base-200 text-base-content rounded-lg p-4 shadow-md"
         ),
-        # Scripts and CSS
+        # Scripts
+        # Core & plugin scripts and styles
         Script(src="https://d3js.org/d3.v7.min.js"),
         Script(src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"),
         Script(src="https://unpkg.com/cal-heatmap/dist/cal-heatmap.min.js"),
-        Script(src="https://unpkg.com/cal-heatmap/plugins/Tooltip.min.js"),
-        Script(src="https://unpkg.com/cal-heatmap/plugins/LegendLite.min.js"),
-        Script(src="https://unpkg.com/cal-heatmap/plugins/CalendarLabel.min.js"),
+
+        # Plugin dependencies and plugins
+        Script(src="https://unpkg.com/@popperjs/core@2"),  # Needed for Tooltip
+        Script(src="https://unpkg.com/cal-heatmap/dist/plugins/Tooltip.min.js"),
+        Script(src="https://unpkg.com/cal-heatmap/dist/plugins/LegendLite.min.js"),
+        Script(src="https://unpkg.com/cal-heatmap/dist/plugins/CalendarLabel.min.js"),
+
+        # CSS
         Link(rel="stylesheet", href="https://unpkg.com/cal-heatmap/dist/cal-heatmap.css"),
-        # Heatmap Init
+        # Init
         Script(f"""
         document.addEventListener("DOMContentLoaded", function () {{
             const data = {json.dumps(heatmap_data)};
@@ -140,7 +107,7 @@ def CommitHeatmap(heatmap_data):
             cal.paint({{
                 theme: 'dark',
                 itemSelector: "#ex-ghDay",
-                range: 6,
+                range: 8,
                 date: {{
                     start: new Date(new Date().setDate(new Date().getDate() - 180)),
                 }},
@@ -148,7 +115,6 @@ def CommitHeatmap(heatmap_data):
                     source: data,
                     x: 'date',
                     y: 'value',
-                    groupY: 'max',
                 }},
                 scale: {{
                     color: {{
@@ -169,50 +135,15 @@ def CommitHeatmap(heatmap_data):
                     height: 11,
                     gutter: 4,
                 }},
-            }},
-            
-           );
+            }},);
         }});
         """)
     )
-'''
- [
-                [
-                    Tooltip,
-                    {{
-                        text: function (date, value, dayjsDate) {{
-                            return (value ? value : "No") + " commits on " + dayjsDate.format("dddd, MMMM D, YYYY");
-                        }}
-                    }}
-                ],
-                [
-                    LegendLite,
-                    {{
-                        includeBlank: true,
-                        itemSelector: "#ex-ghDay-legend",
-                        radius: 2,
-                        width: 11,
-                        height: 11,
-                        gutter: 4
-                    }}
-                ],
-                [
-                    CalendarLabel,
-                    {{
-                        width: 30,
-                        textAlign: "start",
-                        text: () => dayjs.weekdaysShort().map((d, i) => (i % 2 === 0 ? "" : d)),
-                        padding: [25, 0, 0, 0]
-                    }}
-                ]
-            ]
-'''
 
 def FooterSection():
     return Footer(
-        P("© 2025 Mershab Issadien"),
-        cls="footer"
+        P("© 2025 Mershab Issadien", cls="text-sm text-center text-base-content"),
+        cls="mt-12"
     )
-
 
 serve()

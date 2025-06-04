@@ -1,8 +1,6 @@
-from collections import defaultdict
-from datetime import datetime
+import json
 
 from fasthtml.common import *
-import json
 
 import service.apiclient
 
@@ -13,9 +11,11 @@ app, rt = fast_app(hdrs=[
     Link(rel="stylesheet", href="https://cdn.jsdelivr.net/npm/daisyui@4.11.1/dist/full.min.css"),
 ])
 
+
 @rt('/status')
 def status():
     return {'status': 'ok'}
+
 
 @rt
 def index():
@@ -28,7 +28,7 @@ def index():
                     "Backend engineer specializing in Java, Go & Python, with a passion for Kubernetes, DevOps, and cloud infrastructure. \n"
                 ),
                 AboutSection(),
-                CommitHeatmap(service.apiclient.GetHeatmapData(service.apiclient.GetCommits())),
+                CommitHeatmap(),
                 FooterSection(),
                 cls="max-w-xl"  # optional max width for content
             ),
@@ -44,6 +44,7 @@ def HeroSection(title, subtitle):
         cls="text-center"
     )
 
+
 def AboutSection():
     return Section(
         H2("About Me", cls="text-2xl font-semibold text-base-content mb-2"),
@@ -58,11 +59,15 @@ def AboutSection():
         cls="bg-base-200 p-6 rounded-lg shadow"
     )
 
-def CommitHeatmap(heatmap_data):
+
+def CommitHeatmap():
+    heatmap_request = service.apiclient.load_request_data()
+    heatmap_data = service.apiclient.fetch_commits_heatmap(heatmap_request)
+
     return Div(
         H2("Commit Activity", cls="text-xl font-semibold text-base-content mb-4"),
         Div(
-            Div(id="ex-ghDay", cls="mb-4 "),
+            Div(id="ex-ghDay", cls="mb-4 w-full max-w-full overflow-auto rounded-md"),
 
             Div(
                 A("← Previous", href="#", cls="btn btn-sm btn-outline", **{
@@ -120,7 +125,7 @@ def CommitHeatmap(heatmap_data):
                     color: {{
                         type: 'threshold',
                         range: ['#14432a', '#166b34', '#37a446', '#4dd05a'],
-                        domain: [1, 3, 5],
+                        domain: [1, 3, 7],
                     }},
                 }},
                 domain: {{
@@ -135,15 +140,42 @@ def CommitHeatmap(heatmap_data):
                     height: 11,
                     gutter: 4,
                 }},
-            }},);
+            }},
+            
+           [
+                [
+                    Tooltip,
+                    {{
+                        text: function (date, value, dayjsDate) {{
+                            return (value ? value : "No") + " commits on " + dayjsDate.format("dddd, MMMM D, YYYY");
+                        }}
+                    }}
+                ],
+                [
+                    LegendLite,
+                    {{
+                        includeBlank: true,
+                        itemSelector: "#ex-ghDay-legend",
+                        radius: 2,
+                        width: 11,
+                        height: 11,
+                        gutter: 4
+                    }}
+                ], 
+               
+           ]
+            
+            );
         }});
         """)
     )
+
 
 def FooterSection():
     return Footer(
         P("© 2025 Mershab Issadien", cls="text-sm text-center text-base-content"),
         cls="mt-12"
     )
+
 
 serve()

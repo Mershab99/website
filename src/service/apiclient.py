@@ -6,18 +6,17 @@ import os
 
 # Toggle behavior
 USE_CACHE = False
-USE_FILE = True
+USE_FILE = False
 
 # Simple in-memory cache
 REQUEST_CACHE_COMMITS = {}
 REQUEST_CACHE_HEATMAP = {}
 
-GIT_REPO_STATS_API_URL = "http://localhost:8080"
-# GIT_REPO_STATS_API_URL = "https://git-repo-stats.mershab.com"
+#GIT_REPO_STATS_API_URL = "http://localhost:8080"
+GIT_REPO_STATS_API_URL = "https://git-repo-stats.mershab.com"
 
 # Path to request JSON file
-if USE_FILE:
-    REQUEST_FILE_PATH = os.path.join("request.json")
+REQUEST_FILE_PATH = os.path.join("request.json")
 
 
 def load_request_data():
@@ -30,8 +29,7 @@ def fetch_commits_heatmap(req):
     if USE_CACHE:
         if key not in REQUEST_CACHE_HEATMAP:
             try:
-                # res = requests.post("https://git-repo-stats.mershab.com/commits", json=req)
-                res = requests.post("http://localhost:8080/commits/heatmap", json=req)
+                res = requests.post(f"{GIT_REPO_STATS_API_URL}/commits/heatmap", json=req)
                 REQUEST_CACHE_HEATMAP[key] = res
             except Exception:
                 res = None
@@ -39,11 +37,12 @@ def fetch_commits_heatmap(req):
             res = REQUEST_CACHE_HEATMAP[key]
     else:
         try:
-            res = requests.post("http://localhost:8080/commits/heatmap", json=req)
+            res = requests.post(f"{GIT_REPO_STATS_API_URL}/commits/heatmap", json=req)
         except Exception:
             res = None
 
     return res.json() if res else None
+
 
 def fetch_commits(req):
     key = json.dumps(req, sort_keys=True)

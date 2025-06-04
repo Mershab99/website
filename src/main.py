@@ -17,20 +17,58 @@ def status():
     return {'status': 'ok'}
 
 
+def task_load_heatmap():
+    req = service.apiclient.load_request_data()
+    data = service.apiclient.fetch_commits_heatmap(req)
+    return data
+
+
+@rt('/load-heatmap')
+def load_heatmap():
+    data = task_load_heatmap()
+    return CommitHeatmap(data)
+
+
+def header_scripts():
+    return (
+        Script(src="https://d3js.org/d3.v7.min.js"),
+        Script(src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"),
+        Script(src="https://unpkg.com/cal-heatmap/dist/cal-heatmap.min.js"),
+        Script(src="https://unpkg.com/@popperjs/core@2"),
+        Script(src="https://unpkg.com/cal-heatmap/dist/plugins/Tooltip.min.js"),
+        Script(src="https://unpkg.com/cal-heatmap/dist/plugins/LegendLite.min.js"),
+        Script(src="https://unpkg.com/cal-heatmap/dist/plugins/CalendarLabel.min.js"),
+        Link(rel="stylesheet", href="https://unpkg.com/cal-heatmap/dist/cal-heatmap.css"),
+    )
+
+
+#
 @rt
 def index():
     return (
-        Title(FULL_NAME),  # page title in browser tab
+        header_scripts(),
+        Title(FULL_NAME),
         Main(
             Div(
                 HeroSection(
                     f"Hi, I'm {FULL_NAME}",
-                    "Backend engineer specializing in Java, Go & Python, with a passion for Kubernetes, DevOps, and cloud infrastructure. \n"
+                    "Backend engineer specializing in Java, Go & Python, with a passion for Kubernetes, DevOps, and cloud infrastructure.\n"
+                ),
+
+                Div(
+                    H2("Commit Heatmap", cls="text-2xl font-bold mb-4"),
+                    Span(
+                        id="heatmap-spinner",
+                        cls="loading loading-dots loading-xl",
+                        hx_post=load_heatmap,
+                        hx_target="#heatmap-spinner",
+                        hx_trigger="load delay:1s",
+                        hx_swap="outerHTML"
+                    ),
                 ),
                 AboutSection(),
-                CommitHeatmap(),
                 FooterSection(),
-                cls="max-w-xl"  # optional max width for content
+                cls="max-w-xl"
             ),
             cls="flex flex-col justify-center items-center min-h-screen text-center px-4"
         )
@@ -60,61 +98,44 @@ def AboutSection():
     )
 
 
-def CommitHeatmap():
-    heatmap_request = service.apiclient.load_request_data()
-    heatmap_data = service.apiclient.fetch_commits_heatmap(heatmap_request)
-
+def CommitHeatmap(heatmap_data):
     return Div(
-        H2("Commit Activity", cls="text-xl font-semibold text-base-content mb-4"),
         Div(
-            Div(id="ex-ghDay", cls="mb-4 w-full max-w-full overflow-auto rounded-md"),
+            Div(id="commit-heatmap", cls="mb-4 w-full max-w-full overflow-auto rounded-md"),
 
             Div(
                 A("← Previous", href="#", cls="btn btn-sm btn-outline", **{
-                    "onclick": "event.preventDefault(); cal.previous();"
+                    "onclick": "event.preventDefault(); window.cal?.previous();"
                 }),
                 A("Next →", href="#", cls="btn btn-sm btn-outline ml-2", **{
-                    "onclick": "event.preventDefault(); cal.next();"
+                    "onclick": "event.preventDefault(); window.cal?.next();"
                 }),
                 cls="mb-4"
             ),
 
             Div(
                 Span("Less", cls="text-sm text-gray-400"),
-                Div(id="ex-ghDay-legend", cls="inline-block mx-2"),
+                Div(id="commit-legend", cls="inline-block mx-2"),
                 Span("More", cls="text-sm text-gray-400"),
                 cls="text-right text-sm"
             ),
 
             cls="bg-base-200 text-base-content rounded-lg p-4 shadow-md"
         ),
-        # Scripts
-        # Core & plugin scripts and styles
-        Script(src="https://d3js.org/d3.v7.min.js"),
-        Script(src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"),
-        Script(src="https://unpkg.com/cal-heatmap/dist/cal-heatmap.min.js"),
 
-        # Plugin dependencies and plugins
-        Script(src="https://unpkg.com/@popperjs/core@2"),  # Needed for Tooltip
-        Script(src="https://unpkg.com/cal-heatmap/dist/plugins/Tooltip.min.js"),
-        Script(src="https://unpkg.com/cal-heatmap/dist/plugins/LegendLite.min.js"),
-        Script(src="https://unpkg.com/cal-heatmap/dist/plugins/CalendarLabel.min.js"),
-
-        # CSS
-        Link(rel="stylesheet", href="https://unpkg.com/cal-heatmap/dist/cal-heatmap.css"),
-        # Init
+        # FIXED SCRIPT EXECUTION
         Script(f"""
-        document.addEventListener("DOMContentLoaded", function () {{
+        (function () {{
             const data = {json.dumps(heatmap_data)};
             const cal = new CalHeatmap();
             window.cal = cal;
 
             cal.paint({{
                 theme: 'dark',
-                itemSelector: "#ex-ghDay",
+                itemSelector: "#commit-heatmap",
                 range: 8,
                 date: {{
-                    start: new Date(new Date().setDate(new Date().getDate() - 180)),
+                    start: new Date(new Date().setDate(new Date().getDate() - 210)),
                 }},
                 data: {{
                     source: data,
@@ -141,8 +162,7 @@ def CommitHeatmap():
                     gutter: 4,
                 }},
             }},
-            
-           [
+            [
                 [
                     Tooltip,
                     {{
@@ -155,18 +175,15 @@ def CommitHeatmap():
                     LegendLite,
                     {{
                         includeBlank: true,
-                        itemSelector: "#ex-ghDay-legend",
+                        itemSelector: "#commit-legend",
                         radius: 2,
                         width: 11,
                         height: 11,
                         gutter: 4
                     }}
-                ], 
-               
-           ]
-            
-            );
-        }});
+                ]
+            ]);
+        }})();
         """)
     )
 

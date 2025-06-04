@@ -6,7 +6,6 @@ import os
 
 # Toggle behavior
 USE_CACHE = False
-USE_FILE = False
 
 # Simple in-memory cache
 REQUEST_CACHE_COMMITS = {}

@@ -55,6 +55,10 @@ custom_styles = Style("""
 app, rt = fast_app(hdrs=[custom_styles])
 
 
+@rt('/status')
+def status():
+    return {'status': 'ok'}
+
 @rt
 def index():
     return Titled(
@@ -95,50 +99,114 @@ def AboutSection():
 
 def CommitHeatmap(heatmap_data):
     return Div(
-        H2("Commit Activity (Last 30 Days)"),
-        Div(id="cal-heatmap"),
+        H2("Commit Activity (Last 6 Months)"),
+        Div(
+            Div(id="ex-ghDay", cls="margin-bottom--md"),
+            A("← Previous", href="#", cls="button button--sm button--secondary margin-top--sm", **{
+                "onclick": "event.preventDefault(); cal.previous();"
+            }),
+            A("Next →", href="#", cls="button button--sm button--secondary margin-top--sm margin-left--xs", **{
+                "onclick": "event.preventDefault(); cal.next();"
+            }),
+            Div(
+                Span("Less", style="color: #768390;"),
+                Div(id="ex-ghDay-legend", style="display: inline-block; margin: 0 4px;"),
+                Span("More", style="color: #768390; font-size: 12px;"),
+                style="float: right; font-size: 12px;",
+            ),
+            style={
+                "background": "#22272d",
+                "color": "#adbac7",
+                "borderRadius": "3px",
+                "padding": "1rem",
+                "overflow": "hidden"
+            }
+        ),
+        # Scripts and CSS
         Script(src="https://d3js.org/d3.v7.min.js"),
+        Script(src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"),
         Script(src="https://unpkg.com/cal-heatmap/dist/cal-heatmap.min.js"),
+        Script(src="https://unpkg.com/cal-heatmap/plugins/Tooltip.min.js"),
+        Script(src="https://unpkg.com/cal-heatmap/plugins/LegendLite.min.js"),
+        Script(src="https://unpkg.com/cal-heatmap/plugins/CalendarLabel.min.js"),
         Link(rel="stylesheet", href="https://unpkg.com/cal-heatmap/dist/cal-heatmap.css"),
+        # Heatmap Init
         Script(f"""
         document.addEventListener("DOMContentLoaded", function () {{
             const data = {json.dumps(heatmap_data)};
             const cal = new CalHeatmap();
+            window.cal = cal;
 
             cal.paint({{
-                itemSelector: "#cal-heatmap",
+                theme: 'dark',
+                itemSelector: "#ex-ghDay",
                 range: 6,
-                
-                domain: {{ type: 'month', gutter: 15 }},
-                subDomain: {{ type: 'day'}}, 
-                
                 date: {{
                     start: new Date(new Date().setDate(new Date().getDate() - 180)),
                 }},
                 data: {{
                     source: data,
                     x: 'date',
-                    y: 'value'
+                    y: 'value',
+                    groupY: 'max',
                 }},
                 scale: {{
-                  color: {{
-                    type: 'threshold',
-                    range: ['#14432a', '#166b34', '#37a446', '#4dd05a'],
-                    domain: [10, 20, 30],
-                  }},
+                    color: {{
+                        type: 'threshold',
+                        range: ['#14432a', '#166b34', '#37a446', '#4dd05a'],
+                        domain: [1, 3, 5],
+                    }},
                 }},
                 domain: {{
-                  type: 'month',
-                  gutter: 4,
-                  label: {{ text: 'MMM', textAlign: 'start', position: 'top' }},
+                    type: 'month',
+                    gutter: 4,
+                    label: {{ text: 'MMM', textAlign: 'start', position: 'top' }},
+                }},
+                subDomain: {{
+                    type: 'ghDay',
+                    radius: 2,
+                    width: 11,
+                    height: 11,
+                    gutter: 4,
                 }},
             }},
-            );
+            
+           );
         }});
         """)
-
     )
-
+'''
+ [
+                [
+                    Tooltip,
+                    {{
+                        text: function (date, value, dayjsDate) {{
+                            return (value ? value : "No") + " commits on " + dayjsDate.format("dddd, MMMM D, YYYY");
+                        }}
+                    }}
+                ],
+                [
+                    LegendLite,
+                    {{
+                        includeBlank: true,
+                        itemSelector: "#ex-ghDay-legend",
+                        radius: 2,
+                        width: 11,
+                        height: 11,
+                        gutter: 4
+                    }}
+                ],
+                [
+                    CalendarLabel,
+                    {{
+                        width: 30,
+                        textAlign: "start",
+                        text: () => dayjs.weekdaysShort().map((d, i) => (i % 2 === 0 ? "" : d)),
+                        padding: [25, 0, 0, 0]
+                    }}
+                ]
+            ]
+'''
 
 def FooterSection():
     return Footer(

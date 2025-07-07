@@ -15,7 +15,7 @@ REQUEST_CACHE_HEATMAP = {}
 GIT_REPO_STATS_API_URL = "https://git-repo-stats.mershab.com"
 
 # Path to request JSON file
-REQUEST_FILE_PATH = os.path.join("request.json")
+REQUEST_FILE_PATH = os.path.join(os.getcwd(),f"request.json")
 
 
 def load_request_data():
